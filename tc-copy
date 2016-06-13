@@ -16,7 +16,7 @@ from tilecloud.filter.error import DropErrors, LogErrors, MaximumConsecutiveErro
 from tilecloud.filter.logger import Logger
 from tilecloud.filter.rate import RateLimit
 from tilecloud.store.boundingpyramid import BoundingPyramidTileStore
-
+from tilecloud.filter.image import ImageFormatConverter
 
 def main(argv):
     logger = logging.getLogger(os.path.basename(argv[0]))
@@ -39,6 +39,7 @@ def main(argv):
     option_parser.add_option('--statsd-host', default='127.0.0.1', metavar='HOST')
     option_parser.add_option('--statsd-port', default=8125, metavar='PORT', type=int)
     option_parser.add_option('--statsd-prefix', default='tc-copy-', metavar='PREFIX')
+    option_parser.add_option('--format', type=str)
     option_parser.add_option('-v', '--verbose', action='store_true')
     options, args = option_parser.parse_args(argv[1:])
     if options.verbose:
@@ -67,6 +68,7 @@ def main(argv):
                 tilestream = BoundingPyramidTileStore(bounding_pyramid).list()
             else:
                 tilestream = input_tilestore.list()
+
             if options.i is not None and options.n is not None:
                 tilestream = imap(EveryNth(options.n, options.i), tilestream)
             if options.randomize:
@@ -86,6 +88,11 @@ def main(argv):
                 if options.benchmark:
                     tilestream = imap(benchmark.sample('generate-%d' % (i,)), tilestream)
             tilestream = imap(LogErrors(logger, logging.ERROR, '%(tilecoord)s: %(error)s'), tilestream)
+
+            if options.format is not None:
+                print 'Formatting output as ' + options.format
+                tilestream = imap(ImageFormatConverter(options.format), tilestream)
+
             if statsd:
                 tilestream = imap(StatsdCountErrors(statsd), tilestream)
             if options.maximum_consecutive_errors:

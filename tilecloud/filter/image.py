@@ -3,7 +3,7 @@ This module includes filters doing manipulations on the tile image. It
 requires the PIL lib.
 """
 
-import PIL.Image
+from PIL import Image
 from six.moves import cStringIO as StringIO
 
 from tilecloud import Tile
@@ -31,7 +31,7 @@ class ImageFormatConverter(object):
         if tile.content_type != self.content_type:
             assert tile.data is not None
             string_io = StringIO()
-            PIL.Image.open(StringIO(tile.data)).save(string_io, self.format,
+            Image.open(StringIO(tile.data)).save(string_io, self.format,
                                                      **self.kwargs)
             tile.content_type = self.content_type
             tile.data = string_io.getvalue()
@@ -59,11 +59,11 @@ class MergeFilter(object):
         self.kwargs = kwargs
 
     def __call__(self, tile):
-        image = PIL.Image.open(StringIO(tile.data))
+        image = Image.open(StringIO(tile.data))
         for tilestore in self.tilestores:
             t = tilestore.get_one(Tile(tile.tilecoord))
             if t is not None:
-                image2 = PIL.Image.open(StringIO(t.data))
+                image2 = Imagemage.open(StringIO(t.data))
                 image.paste(image2, None, image2)
         content_type = self.content_type
         if content_type is None:
@@ -94,7 +94,7 @@ class PILImageFilter(object):
 
     def __call__(self, tile):
         assert tile.data is not None
-        image = PIL.Image.open(StringIO(tile.data))
+        image = Image.open(StringIO(tile.data))
         image = image.filter(self.filter)
         string_io = StringIO()
         image.save(string_io,
